@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<head>
+	<style>
+		td{
+			border: 1px solid #a4a4a4;
+		}
+	</style>
+</head>
+<body>
+	<canvas id="fieldCanvas" width="600" height="600" style="border:1px solid #a4a4a4; white-space:nowrap"></canvas>
+	
+	<script>
+		var fieldCanvas = document.getElementById("fieldCanvas");
+		var ctx = fieldCanvas.getContext("2d");
+		var ctx = fieldCanvas.getContext("2d");
+		var PI_CONST = 3.14159;
+		var dotDensity = 20;
+		var currStep = 0;
+		var maxStep = dotDensity * 10;
+		var stepUpdate = -0.01;
+		var slopes = [];
+		var pointPositions = [];
+		var pointVelocities = [];
+		var pauseAnimation = false;
+		var nextPosition;
+		
+		var gravity = 9.8 / 30;
+		//var gravity = 0;
+		var applyGravity = false;
+		var collisionElasticity = -0.5;
+		
+		// initializing point positions and velocities
+		for( i = 0; i < dotDensity; i++){
+			for(j = 0; j < dotDensity; j++){
+				pointVelocities.push(new Point(0,0));
+				pointPositions.push(new Point(50 + i * (500 / (dotDensity - 1)), 50 + j * (500 / (dotDensity - 1))));
+				console.log("New Point: " + pointPositions[i * dotDensity + j].valueOf());
+				console.log("Should be: " + "(" + (50 + i * (500 / (dotDensity - 1))) + "," + (50 + j * (500 / (dotDensity - 1))) + ")");
+				console.log("");
+			}
+		}
+		
+		window.setInterval(drawPoints, 30);
+		function updatePointPositions(){
+			for(i = 0; i < dotDensity * dotDensity; i++){
+				if(applyGravity) pointVelocities[i].y += gravity;
+				nextPosition = pointPositions[i].sum(pointVelocities[i]);
+				if(nextPosition.x >= 600 || nextPosition.x <= 0) pointVelocities[i].x *= collisionElasticity;
+				if(nextPosition.y >= 600 || nextPosition.y <= 0) pointVelocities[i].y *= collisionElasticity;
+				pointPositions[i].x += pointVelocities[i].x;
+				pointPositions[i].y += pointVelocities[i].y;
+			}
+		}
+		function drawPoints(){
+			if(pauseAnimation) return;
+			updatePointPositions();
+			ctx.clearRect(0,0,600,600);
+			for(i = 0; i < dotDensity * dotDensity; i++){
+				pointPositions[i].plot("blue", ctx);
+			}
+			
+			currStep += stepUpdate;
+		}
+		drawPoints(); // initial draw
+		pauseAnimation = true; // pausing initially
+		
+		
+		function Point(newX, newY){
+			this.x = newX;
+			this.y = newY;
+			this.distTo = function(pnt){return Math.sqrt(Math.pow((pnt.x - this.x),2) + Math.pow((pnt.y - this.y),2));};
+			this.directionTo = function(pnt){
+				return new Point(pnt.x - this.x, pnt.y - this.y);
+			};
+			this.sum = function(pnt){return new Point(this.x + pnt.x, this.y + pnt.y);}
+			this.sub = function(pnt){return new Point(this.x - pnt.x, this.y - pnt.y);}
+			this.moveBy = function(pnt){this.x += pnt.x; this.y += pnt.y}
+			this.moveBy = function(x, y){this.x += x; this.y += y}
+			this.valueOf = function(){return "(" + this.x + ", " + this.y + ")";};
+			this.plot = function(color, ctx){
+				ctx.beginPath();
+				ctx.arc(this.x, this.y, 1, 0, Math.PI * 2, true);
+				ctx.fillStyle = color;
+				ctx.fill();
+				ctx.strokeStyle = color;
+				ctx.stroke();
+				ctx.closePath();
+			}
+		}
+		
+		function createForce(origin){
+			for(i = 0; i < dotDensity * dotDensity; i++){
+				forceDirection = origin.directionTo(pointPositions[i]);
+				forceDistance = origin.distTo(pointPositions[i]) / 60;
+				pointVelocities[i].moveBy(forceDirection.x / Math.pow(forceDistance, 2),
+				                                                    forceDirection.y / Math.pow(forceDistance, 2));
+			}
+			origin.plot("red", ctx);
+		}
+		createForce(new Point(300,300));
+		/*createForce(new Point(300, 300));
+		createForce(new Point(20, 20));
+		createForce(new Point(20, 580));
+		createForce(new Point(580, 20));
+		createForce(new Point(580, 580));
+		
+		createForce(new Point(300, 100));
+		createForce(new Point(100, 300));
+		createForce(new Point(500, 300));
+		createForce(new Point(300, 500));*/
+		window.onkeyup = function(keyUp){
+			//alert(keyUp.keyCode);
+			if(keyUp.keyCode == 32){
+				pauseAnimation = !pauseAnimation;
+			}
+			if(keyUp.keyCode == 71){
+				applyGravity = !applyGravity;
+			}
+		}
+		
+		fieldCanvas.addEventListener("mousedown", ctxMouseDown, false);
+		
+		function ctxMouseDown(mouseClick){
+			console.log("(" + (mouseClick.pageX - 8) + ", " + (mouseClick.pageY - 8) + ")");
+			newPnt = new Point((mouseClick.pageX - 8), (mouseClick.pageY - 8));
+			for(i = 0; i < dotDensity * dotDensity; i++){
+				forceDirection = newPnt.directionTo(pointPositions[i]);
+				forceDistance = newPnt.distTo(pointPositions[i]) / 40;
+				pointVelocities[i].moveBy(forceDirection.x / Math.pow(forceDistance, 2),
+				                                                    forceDirection.y / Math.pow(forceDistance, 2));
+			}
+			newPnt.plot("red", ctx);
+		}
+		
+		// old method for placing dots
+		// 300 + 280 * slopes[i].x * (((currStep + i * (maxStep / dotDensity)) % maxStep) / maxStep)
+		
+		/*    OLD STUFF FROM BEZIER CURVE DRAWING
+		fieldCanvas.addEventListener("mousedown", ctxMouseDown, false);
+		function Point(x,y){
+			this.x = x;
+			this.y = y;
+			this.distTo = function(pnt){return Math.sqrt(Math.pow((pnt.x - this.x),2) + Math.pow((pnt.y - this.y),2));};
+			//this.add = function{return new Point(this.x + pnt.x, this.y + pnt.y);}
+			this.sub = function(pnt){return new Point(this.x - pnt.x, this.y - pnt.y);}
+			this.valueOf = function(){return "(" + this.x + ", " + this.y + ")";};
+			this.plot = function(color, ctx){
+				ctx.beginPath();
+				ctx.arc(this.x, this.y, 1, 0, Math.PI * 2, true);
+				ctx.fillStyle = color;
+				ctx.fill();
+				ctx.strokeStyle = color;
+				ctx.stroke();
+				ctx.closePath();
+			}
+		}
+		function valueOf(point){return "(" + point.x + ", " + point.y + ")";};
+		function ctxMouseDown(mouseClick){
+			//alert("(" + (mouseClick.pageX - 8) + ", " + (mouseClick.pageY - 8) + ")");
+			newPnt = new Point(mouseClick.pageX - 8, mouseClick.pageY - 8);
+			newPnt.plot("blue", ctx);
+			fieldPoints.push(newPnt);
+		}
+		for(i=50;i<600;i=i+50){
+			ctx.beginPath();
+			ctx.strokeStyle="#a4a4a4";
+			ctx.moveTo(i,0);
+			ctx.lineTo(i,600);
+			ctx.moveTo(0,i);
+			ctx.lineTo(600,i);
+			ctx.stroke();
+			ctx.closePath();
+		}
+		function randInt(min, max) {
+			min = Math.ceil(min);
+			max = Math.floor(max);
+			return Math.floor(Math.random() * (max - min)) + min;
+		}
+		function drawLine(points, ctx){
+			ctx.beginPath();
+			ctx.strokeStyle = "blue";
+			ctx.moveTo(points[0].x, points[0].y);
+			for(var i = 1; i < points.length; i++){
+				ctx.lineTo(points[i].x, points[i].y);
+				ctx.stroke();
+				ctx.moveTo(points[i].x, points[i].y);
+			}
+			ctx.closePath();
+		}
+		function midPoint(pnt1,pnt2,ratio){
+			return new Point(pnt1.x + (pnt2.x - pnt1.x) * ratio, pnt1.y + (pnt2.y - pnt1.y) * ratio);
+		}
+		function plot(points, color, ctx){
+			for(var i = 0; i < points.length; i++){
+				points[i].plot(color, ctx);
+			}
+		}
+		//draws bezier curve using points contained in array
+		//any points beyond index (points.length - 1) % 3 are ignored
+		function bezierCurve(points, ratio, ctx){
+			ctx.beginPath();
+			ctx.strokeStyle = "blue";
+			for(var i = 0; i < points.length; i += 2){
+				ctx.moveTo(points[i].x, points[i].y);
+				for(var j = 0; j <= 1; j += ratio){
+					nextPnt = midPoint(midPoint(points[i], points[i+1], j), midPoint(points[i+1], points[i+2], j), j);
+					ctx.lineTo(nextPnt.x, nextPnt.y);
+					ctx.stroke();
+					ctx.moveTo(nextPnt.x, nextPnt.y);
+				}
+			ctx.lineTo(points[i+2].x,points[i+2].y);
+			ctx.stroke();
+			}
+			ctx.closePath();
+		}
+		function copyArray(srcArray){
+			newArray = [];
+			for(var i = 0; i < srcArray.length; i++){
+				newArray.push(srcArray[i]);
+			}
+			return newArray;
+		}
+		function shift(points, shamtX, shamtY){
+			for(var i = 0; i < points.length; i++){
+				points[i].x +=shamtX;
+				points[i].y +=shamtY;
+			}
+		}
+		function bezierCubic(points, ratio, ctx){
+			ctx.beginPath();
+			ctx.strokeStyle = "blue";
+			for(var i = 0; i < points.length; i += 3){
+				ctx.moveTo(points[i].x, points[i].y);
+				for(var j = 0; j <= 1; j += ratio){
+					//alert("working");
+					nextPnt = midPoint(midPoint(midPoint(points[i], points[i+1], j), midPoint(points[i+1], points[i+2], j), j),midPoint(midPoint(points[i+1], points[i+2], j), midPoint(points[i+2], points[i+3], j), j),j);
+					ctx.lineTo(nextPnt.x, nextPnt.y);
+					ctx.stroke();
+					ctx.moveTo(nextPnt.x, nextPnt.y);
+				}
+			ctx.lineTo(points[i+3].x,points[i+3].y);
+			ctx.stroke();
+			}
+			ctx.closePath();
+		}
+		function bezierPoint(points, ratio){
+			if (points.length == 1)return points[0];   //base case
+			for(var i = 0; i < points.length - 1; i++){
+				testPoints.push(points[i]);                //filling array with points for demonstration
+				points[i] = midPoint(points[i], points[i+1], ratio);
+			}
+			testPoints.push(points[points.length - 1]);
+			points.pop();
+			var outString = "";
+			for(var j = 0; j < points.length; j++) outString += points[j].valueOf();
+			//alert(outString);
+			//plot(points, "red", ctx);
+			return bezierPoint(points, ratio);
+		}
+		function bezier(points, ratio, ctx){
+			ctx.beginPath();
+			ctx.strokeStyle = "blue";
+			var pointsCopy = [];
+			ctx.moveTo(points[0].x, points[0].y);
+			for(var j = 0; j <= 1; j += ratio){
+				pointsCopy = copyArray(points);
+				nextPnt = bezierPoint(pointsCopy, j);
+				ctx.lineTo(nextPnt.x, nextPnt.y);
+				ctx.stroke();
+				ctx.moveTo(nextPnt.x, nextPnt.y);
+			}
+			ctx.stroke();
+			ctx.closePath();
+			plot(testPoints, "red", ctx);
+		}
+		window.onkeyup = function(keyUp){
+			if(keyUp.keyCode == 13){
+				ctx.clearRect(0,0,600,600);
+				bezier(fieldPoints, 0.01, ctx);
+			}
+		} */
+		
+		/*for(var i = 0; i <= 300; i +=50){
+			testPoints.push(new Point(0,i));
+			testPoints.push(new Point(0,-i));
+			testPoints.push(new Point(i,0));
+			testPoints.push(new Point(-i,0));
+		}
+		
+		
+		//bezierCurve(testPoints, 0.025, ctx);
+		//bezierCubic(testPoints, 0.025, ctx);
+		//drawLine(testPoints, ctx);
+		//alert("working");
+		//var testPoints = [];
+		//for(var i = 20; i < 200; i++) testPoints.push(new Point(300 + i, 300 + 0.5 * Math.pow(i,2) + 4 * i + 15));
+		
+		for(var i = 0; i < testPoints.length; i++) testPoints[i].plot(ctx);
+//TESTBENCH for random functions
+
+		var testPoints = [new Point(50,200), new Point(150,100), new Point(300,100), new Point(300,500), new Point(500,400)];
+		for(var i = 0; i < 20; i ++) testPoints.push(new Point(randInt(0,600), randInt(0,600)));
+		plot(testPoints, "blue", ctx);
+		bezier(testPoints, 0.01, ctx);
+		
+		var myArray = [2,5,7,8];
+		var myOtherArray = copyArray(myArray);
+		myArray.pop();
+		alert("myArray: " + myArray + "\nmyOtherArray: " + myOtherArray);
+		
+		var myPoint = new Point(9,12);
+		myPoint.plot(ctx);
+		var otherPoint = new Point(3,5);
+		var result = otherPoint.sub(myPoint);
+		//alert(result.valueOf());
+		//alert(myPoint.distTo(otherPoint));
+		//alert("working");
+		*/
+		//function fires upon the "ENTER" key being released
+	</script>
+</body>
