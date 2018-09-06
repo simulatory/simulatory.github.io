@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<head>
+	<style>
+		td{
+			border: 1px solid #a4a4a4;
+		}
+	</style>
+</head>
+<body>
+	<canvas id="fieldCanvas" width="600" height="600" style="border:1px solid #a4a4a4; white-space:nowrap"></canvas>
+	<table>
+	<th></th><th width = 400px></th>
+	<tr>
+		<td>Position</td>
+		<td id = "positionDisplay"></td>
+	</tr>
+	<tr>
+		<td>Forward</td>
+		<td id = "forwardDisplay"></td>
+	</tr>
+	<tr>
+		<td>Length</td>
+		<td id = "lengthDisplay"></td>
+	</tr>
+	<tr>
+		<td>Neutral</td>
+		<td id = "neutralDisplay"></td>
+	</tr>
+	</table>
+	<button onclick = "clearSimulation()">Clear Simulation</button><br>
+	Canvas Cursor: <span id = "canvasCursorField"></span>
+	
+	<script>
+		var fieldCanvas = document.getElementById("fieldCanvas");
+		var canvasCursorField = document.getElementById("canvasCursorField");
+		var positionDisplay = document.getElementById("positionDisplay");
+		var forwardDisplay = document.getElementById("forwardDisplay");
+		var lengthDisplay = document.getElementById("lengthDisplay");
+		var neutralDisplay = document.getElementById("neutralDisplay");
+		var ctx = fieldCanvas.getContext("2d");
+		var ctx = fieldCanvas.getContext("2d");
+		var PI_CONST = 3.14159;
+		var dotDensity = 8;
+		var currStep = 0;
+		var maxStep = dotDensity * 10;
+		var stepUpdate = -0.01;
+		var slopes = [];
+		var pointPositions = [];
+		var pointVelocities = [];
+		var pauseAnimation = false;
+		var nextPosition;
+		
+		var gravity = 9.8 / 30;
+		var gravity = 0;
+		var collisionElasticity = -0.8;
+		elapsedTime = 0;
+		var springRadius = 8;
+		var canvasCursor = new Point(0,0);
+		var creatingNewSpring = false;
+		var newSpringLocation = new Point(-1,-1);
+		var newSpring;
+		
+		function clearSimulation(){
+			springs = []; 
+		}
+		
+		function Spring(position, strength, forward, neutral, length, velocity){
+			this.velocity = velocity;
+			this.position = position;
+			this.strength = strength;
+			this.length = length;
+			this.forward = forward;
+			this.neutral = neutral;
+			this.coilCount = Math.ceil(neutral / 10);
+			this.moveTo = function(newPosition){
+				position.x = newPosition.x;
+				position.y = newPosition.y
+			}
+			this.draw = function(color, ctx){
+				ctx.beginPath();
+				ctx.arc(position.x, position.y, 3, 0, Math.PI * 2, true);
+				ctx.fillStyle = color;
+				ctx.fill();
+				ctx.strokeStyle = color;
+				ctx.lineWidth = 1;
+				//console.log("moveto " + position.x + ", " + position.y);
+				ctx.moveTo(position.x,position.y);
+				//console.log("lineto " + (position.x + length * forward.x * 0.2 - position.y * 2) + ", " + (position.y + length * forward.y * 0.2 - forward.x * 2));
+				ctx.lineTo(position.x + length * forward.x * 0.2 - forward.y * springRadius, position.y + length * forward.y * 0.2 - forward.x * springRadius);
+				ctx.moveTo(position.x + length * forward.x * 0.2 - forward.y * springRadius, position.y + length * forward.y * 0.2 - forward.x * springRadius);
+				for(i = 0; i < this.coilCount; i++){
+					console.log("drawing coil " + i + " of " + this.coilCount);
+					ctx.lineTo(position.x + length * forward.x * (0.2 + i * (0.6 / this.coilCount)) - forward.y * springRadius, position.y + length * forward.y * (0.2 + i * (0.6 / this.coilCount)) + forward.x * springRadius);
+					ctx.moveTo(position.x + length * forward.x * (0.2 + i * (0.6 / this.coilCount)) - forward.y * springRadius, position.y + length * forward.y * (0.2 + i * (0.6 / this.coilCount)) + forward.x * springRadius);
+					ctx.lineTo(position.x + length * forward.x * (0.2 + i * (0.6 / this.coilCount)) + forward.y * springRadius, position.y + length * forward.y * (0.2 + i * (0.6 / this.coilCount)) - forward.x * springRadius);
+					ctx.moveTo(position.x + length * forward.x * (0.2 + i * (0.6 / this.coilCount)) + forward.y * springRadius, position.y + length * forward.y * (0.2 + i * (0.6 / this.coilCount)) - forward.x * springRadius);
+				}
+				console.log("working");
+				ctx.lineTo(position.x + length * forward.x, position.y + length * forward.y);
+				ctx.stroke();
+				ctx.closePath();
+			}
+			this.update = function(){
+				if(this.velocity > maxSpeed){
+					maxSpeed = this.velocity;
+					//console.log("New max speed: " + maxSpeed);
+				}
+				if(this.velocity < minSpeed){
+					minSpeed = this.velocity;
+					//console.log("New min speed: " + minSpeed);
+				}
+				length += this.velocity;
+				this.velocity += (strength / 30) * (neutral - length);
+			}
+			this.endPoint = function(){
+				return new Point(position.x + length * forward.x, position.y + length * forward.y);
+			}
+		}
+		
+		presentationStep = 0;
+		springCount = 2;
+		springs = [];
+		/*
+		springs.push(new Spring(new Point(50, 50), 1.5, new Point(0, 1), 450, 400, 0));
+		springs.push(new Spring(new Point(50, 50), 1.5, new Point(1, 0), 400, 400, 11.25));
+		springs.push(new Spring(new Point(50, 50), 1.5, new Point(0,-1), 350, 300, 0));
+		springs.push(new Spring(new Point(50, 50), 1.5, new Point(-1, 0), 300, 250, 0));
+		springs.push(new Spring(new Point(50, 50), 1.5, new Point(0.7, 0.7), 220, 200, 0));
+		*/
+		for(i = 0; i < 8; i += 0.35){
+			springs.push(new Spring(new Point(180, 20), 1.5, new Point(Math.cos(i), Math.sin(i)), 110 - i * 10, 100 - i * 10, -i));
+		}
+		//springs.push(new Spring(new Point(300, 100), 4, new Point(Math.cos(2 * Math.PI / 8), Math.sin(2 * Math.PI / 8)), 100, 100, 300));
+		//spring = new Spring(new Point(300, 100), 4, new Point(0, 1), 100, 100, 300);
+		
+		springDots = new Queue(1000);
+		maxSpeed = 0;
+		minSpeed = 0;
+		
+		window.setInterval(drawSprings, 30);
+		
+		function updateSprings(){
+			for(i = 0; i < springs.length; i++){
+				springs[i].update();
+				if(i+1 < springs.length)springs[i+1].moveTo(springs[i].endPoint());
+				//springs[i].length += springs[i].acceleration;
+				//springs[i].acceleration += (springs[i].strength / 30) * (springs[i].maxLength - springs[i].length);
+			}
+		}
+		function drawSprings(){
+			if(pauseAnimation) return;
+			updateSprings();
+			ctx.clearRect(0,0,600,600);
+			for(j = 0; j < springs.length; j++){
+				springs[j].draw("red", ctx);
+				//springDots.push(new Point(springs[j].position.x + springs[j].length * springs[j].forward.x, springs[j].position.y + springs[j].length * springs[j].forward.y));
+				springDots.newData(springs[j].endPoint());
+			}
+			for(j = 0; j < springDots.size; j++){
+				//console.log("Plotting " + springDots.data[j].valueOf());
+				springDots.data[j].plot("blue", ctx);
+				//if(presentationStep < 1) springDots.data[j].x += 1;
+			}
+		}
+		drawSprings(); // initial draw
+		pauseAnimation = true; // pausing initially
+		
+		function Queue(size){
+			this.size = size;
+			this.data = [];
+			this.nextData = 0;
+			for(i = 0; i < size; i++) this.data.push(new Point(-1,-1));
+			this.newData = function(newPoint){
+				//console.log("Setting point #" + this.nextData + " to " + newPoint.valueOf());
+				this.data[this.nextData].x = newPoint.x;
+				this.data[this.nextData].y = newPoint.y;
+				temp = this.nextData;
+				this.nextData = (temp + 1) % size;
+			}
+		}
+		
+		function Point(newX, newY){
+			this.x = newX;
+			this.y = newY;
+			this.distTo = function(pnt){return Math.sqrt(Math.pow((pnt.x - this.x),2) + Math.pow((pnt.y - this.y),2));};
+			this.directionTo = function(pnt){
+				var distance = this.distTo(pnt);
+				return new Point((pnt.x - this.x) / distance, (pnt.y - this.y) / distance);
+			};
+			this.sum = function(pnt){return new Point(this.x + pnt.x, this.y + pnt.y);}
+			this.sub = function(pnt){return new Point(this.x - pnt.x, this.y - pnt.y);}
+			this.moveBy = function(pnt){this.x += pnt.x; this.y += pnt.y}
+			this.moveBy = function(x, y){this.x += x; this.y += y}
+			this.valueOf = function(){return "(" + this.x + ", " + this.y + ")";};
+			this.plot = function(color, ctx){
+				ctx.beginPath();
+				ctx.arc(this.x, this.y, 1, 0, Math.PI * 2, true);
+				ctx.fillStyle = color;
+				ctx.fill();
+				ctx.strokeStyle = color;
+				ctx.stroke();
+				ctx.closePath();
+			}
+		}
+		
+		/*createForce(new Point(300, 300));
+		createForce(new Point(20, 20));
+		createForce(new Point(20, 580));
+		createForce(new Point(580, 20));
+		createForce(new Point(580, 580));
+		
+		createForce(new Point(300, 100));
+		createForce(new Point(100, 300));
+		createForce(new Point(500, 300));
+		createForce(new Point(300, 500));*/
+		window.onkeyup = function(keyUp){
+			//alert(keyUp.keyCode);
+			if(keyUp.keyCode == 32){
+				pauseAnimation = !pauseAnimation;
+			}
+		}
+		
+		fieldCanvas.addEventListener("mouseup", ctxMouseUp, false);
+		fieldCanvas.addEventListener("mousemove", ctxMouseMove, false);
+		window.onkeydown = function(e) {
+			return !(e.keyCode == 32);
+		};
+		
+		function ctxMouseUp(mouseClick){
+			console.log("(" + (mouseClick.pageX - 8) + ", " + (mouseClick.pageY - 8) + ")");
+			newPnt = new Point((mouseClick.pageX - 8), (mouseClick.pageY - 8));
+			//newPnt.plot("red", ctx);
+			if(creatingNewSpring){
+				console.log("New Spring created:");
+				console.log("Position: " + springs[springs.length - 1].position.valueOf());
+				console.log("Length: " + springs[springs.length - 1].length);
+				console.log("Neutral: " + springs[springs.length - 1].neutral);
+				console.log("Forward: " + springs[springs.length - 1].forward.valueOf());
+				creatingNewSpring = false;
+			} else {
+				console.log("New spring creation started...");
+				newSpringLocation = newPnt;
+				newSpring = new Spring(newPnt, 1.5, newSpringLocation.directionTo(newPnt), newSpringLocation.distTo(newPnt),  newSpringLocation.distTo(newPnt) / 2, 0);
+				creatingNewSpring = true;
+			}
+		}
+		function ctxMouseMove(mouseMove){
+			canvasCursor = new Point((mouseMove.pageX - 8), (mouseMove.pageY - 8));
+			if(creatingNewSpring){
+				newSpring.forward = newSpring.position.directionTo(canvasCursor);
+				newSpring.length = newSpring.position.distTo(canvasCursor);
+				newSpring. neutral = newSpring.position.distTo(canvasCursor) / 2;
+				neutralDisplay.innerHTML = newSpring.neutral;
+				lengthDisplay.innerHTML = newSpring.length;
+				positionDisplay.innerHTML = newSpring.position.valueOf();
+				forwardDisplay.innerHTML = newSpring.forward.valueOf();
+				newSpring.coilCount = Math.ceil(newSpring.neutral / 10);
+				newSpring.draw("red", ctx);
+			}
+			canvasCursorField.innerHTML = canvasCursor.valueOf();
+			//canvasCursor.plot("red", ctx);
+		}
+		
+		/*function ctxMouseDown(mouseClick){
+			console.log("(" + (mouseClick.pageX - 8) + ", " + (mouseClick.pageY - 8) + ")");
+			newPnt = new Point((mouseClick.pageX - 8), (mouseClick.pageY - 8));
+			for(i = 0; i < dotDensity * dotDensity; i++){
+				forceDirection = newPnt.directionTo(pointPositions[i]);
+				forceDistance = newPnt.distTo(pointPositions[i]) / 40;
+				pointVelocities[i].moveBy(forceDirection.x / Math.pow(forceDistance, 2),
+				                                                    forceDirection.y / Math.pow(forceDistance, 2));
+			}
+			newPnt.plot("red", ctx);
+		}*/
+		
+		// old method for placing dots
+		// 300 + 280 * slopes[i].x * (((currStep + i * (maxStep / dotDensity)) % maxStep) / maxStep)
+		
+		/*    OLD STUFF FROM BEZIER CURVE DRAWING
+		fieldCanvas.addEventListener("mousedown", ctxMouseDown, false);
+		function Point(x,y){
+			this.x = x;
+			this.y = y;
+			this.distTo = function(pnt){return Math.sqrt(Math.pow((pnt.x - this.x),2) + Math.pow((pnt.y - this.y),2));};
+			//this.add = function{return new Point(this.x + pnt.x, this.y + pnt.y);}
+			this.sub = function(pnt){return new Point(this.x - pnt.x, this.y - pnt.y);}
+			this.valueOf = function(){return "(" + this.x + ", " + this.y + ")";};
+			this.plot = function(color, ctx){
+				ctx.beginPath();
+				ctx.arc(this.x, this.y, 1, 0, Math.PI * 2, true);
+				ctx.fillStyle = color;
+				ctx.fill();
+				ctx.strokeStyle = color;
+				ctx.stroke();
+				ctx.closePath();
+			}
+		}
+		function valueOf(point){return "(" + point.x + ", " + point.y + ")";};
+		function ctxMouseDown(mouseClick){
+			//alert("(" + (mouseClick.pageX - 8) + ", " + (mouseClick.pageY - 8) + ")");
+			newPnt = new Point(mouseClick.pageX - 8, mouseClick.pageY - 8);
+			newPnt.plot("blue", ctx);
+			fieldPoints.push(newPnt);
+		}
+		for(i=50;i<600;i=i+50){
+			ctx.beginPath();
+			ctx.strokeStyle="#a4a4a4";
+			ctx.moveTo(i,0);
+			ctx.lineTo(i,600);
+			ctx.moveTo(0,i);
+			ctx.lineTo(600,i);
+			ctx.stroke();
+			ctx.closePath();
+		}
+		function randInt(min, max) {
+			min = Math.ceil(min);
+			max = Math.floor(max);
+			return Math.floor(Math.random() * (max - min)) + min;
+		}
+		function drawLine(points, ctx){
+			ctx.beginPath();
+			ctx.strokeStyle = "blue";
+			ctx.moveTo(points[0].x, points[0].y);
+			for(var i = 1; i < points.length; i++){
+				ctx.lineTo(points[i].x, points[i].y);
+				ctx.stroke();
+				ctx.moveTo(points[i].x, points[i].y);
+			}
+			ctx.closePath();
+		}
+		function midPoint(pnt1,pnt2,ratio){
+			return new Point(pnt1.x + (pnt2.x - pnt1.x) * ratio, pnt1.y + (pnt2.y - pnt1.y) * ratio);
+		}
+		function plot(points, color, ctx){
+			for(var i = 0; i < points.length; i++){
+				points[i].plot(color, ctx);
+			}
+		}
+		//draws bezier curve using points contained in array
+		//any points beyond index (points.length - 1) % 3 are ignored
+		function bezierCurve(points, ratio, ctx){
+			ctx.beginPath();
+			ctx.strokeStyle = "blue";
+			for(var i = 0; i < points.length; i += 2){
+				ctx.moveTo(points[i].x, points[i].y);
+				for(var j = 0; j <= 1; j += ratio){
+					nextPnt = midPoint(midPoint(points[i], points[i+1], j), midPoint(points[i+1], points[i+2], j), j);
+					ctx.lineTo(nextPnt.x, nextPnt.y);
+					ctx.stroke();
+					ctx.moveTo(nextPnt.x, nextPnt.y);
+				}
+			ctx.lineTo(points[i+2].x,points[i+2].y);
+			ctx.stroke();
+			}
+			ctx.closePath();
+		}
+		function copyArray(srcArray){
+			newArray = [];
+			for(var i = 0; i < srcArray.length; i++){
+				newArray.push(srcArray[i]);
+			}
+			return newArray;
+		}
+		function shift(points, shamtX, shamtY){
+			for(var i = 0; i < points.length; i++){
+				points[i].x +=shamtX;
+				points[i].y +=shamtY;
+			}
+		}
+		function bezierCubic(points, ratio, ctx){
+			ctx.beginPath();
+			ctx.strokeStyle = "blue";
+			for(var i = 0; i < points.length; i += 3){
+				ctx.moveTo(points[i].x, points[i].y);
+				for(var j = 0; j <= 1; j += ratio){
+					//alert("working");
+					nextPnt = midPoint(midPoint(midPoint(points[i], points[i+1], j), midPoint(points[i+1], points[i+2], j), j),midPoint(midPoint(points[i+1], points[i+2], j), midPoint(points[i+2], points[i+3], j), j),j);
+					ctx.lineTo(nextPnt.x, nextPnt.y);
+					ctx.stroke();
+					ctx.moveTo(nextPnt.x, nextPnt.y);
+				}
+			ctx.lineTo(points[i+3].x,points[i+3].y);
+			ctx.stroke();
+			}
+			ctx.closePath();
+		}
+		function bezierPoint(points, ratio){
+			if (points.length == 1)return points[0];   //base case
+			for(var i = 0; i < points.length - 1; i++){
+				testPoints.push(points[i]);                //filling array with points for demonstration
+				points[i] = midPoint(points[i], points[i+1], ratio);
+			}
+			testPoints.push(points[points.length - 1]);
+			points.pop();
+			var outString = "";
+			for(var j = 0; j < points.length; j++) outString += points[j].valueOf();
+			//alert(outString);
+			//plot(points, "red", ctx);
+			return bezierPoint(points, ratio);
+		}
+		function bezier(points, ratio, ctx){
+			ctx.beginPath();
+			ctx.strokeStyle = "blue";
+			var pointsCopy = [];
+			ctx.moveTo(points[0].x, points[0].y);
+			for(var j = 0; j <= 1; j += ratio){
+				pointsCopy = copyArray(points);
+				nextPnt = bezierPoint(pointsCopy, j);
+				ctx.lineTo(nextPnt.x, nextPnt.y);
+				ctx.stroke();
+				ctx.moveTo(nextPnt.x, nextPnt.y);
+			}
+			ctx.stroke();
+			ctx.closePath();
+			plot(testPoints, "red", ctx);
+		}
+		window.onkeyup = function(keyUp){
+			if(keyUp.keyCode == 13){
+				ctx.clearRect(0,0,600,600);
+				bezier(fieldPoints, 0.01, ctx);
+			}
+		} */
+		
+		/*for(var i = 0; i <= 300; i +=50){
+			testPoints.push(new Point(0,i));
+			testPoints.push(new Point(0,-i));
+			testPoints.push(new Point(i,0));
+			testPoints.push(new Point(-i,0));
+		}
+		
+		
+		//bezierCurve(testPoints, 0.025, ctx);
+		//bezierCubic(testPoints, 0.025, ctx);
+		//drawLine(testPoints, ctx);
+		//alert("working");
+		//var testPoints = [];
+		//for(var i = 20; i < 200; i++) testPoints.push(new Point(300 + i, 300 + 0.5 * Math.pow(i,2) + 4 * i + 15));
+		
+		for(var i = 0; i < testPoints.length; i++) testPoints[i].plot(ctx);
+//TESTBENCH for random functions
+
+		var testPoints = [new Point(50,200), new Point(150,100), new Point(300,100), new Point(300,500), new Point(500,400)];
+		for(var i = 0; i < 20; i ++) testPoints.push(new Point(randInt(0,600), randInt(0,600)));
+		plot(testPoints, "blue", ctx);
+		bezier(testPoints, 0.01, ctx);
+		
+		var myArray = [2,5,7,8];
+		var myOtherArray = copyArray(myArray);
+		myArray.pop();
+		alert("myArray: " + myArray + "\nmyOtherArray: " + myOtherArray);
+		
+		var myPoint = new Point(9,12);
+		myPoint.plot(ctx);
+		var otherPoint = new Point(3,5);
+		var result = otherPoint.sub(myPoint);
+		//alert(result.valueOf());
+		//alert(myPoint.distTo(otherPoint));
+		//alert("working");
+		*/
+		//function fires upon the "ENTER" key being released
+	</script>
+</body>
