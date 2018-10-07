@@ -1,0 +1,36 @@
+<html>
+<title>Sigma Star</title>
+<body>
+	<h2>Σ* Generator</h2>
+	Bound: <input id = "boundInput" value = "3"></input>
+	Language Size Limit: <input id = "sizeLimitInput" value = "20"></input><br>
+	String Output:<br> <textarea id = "stringOutput" cols = 80 rows = 8></textarea><br>
+	<button onclick = "generateString()"> Generate </button>
+<script>
+	function generateString(){
+		outputLanguage = ["a", "b"];
+		var bound = parseInt(document.getElementById("boundInput").value);
+		var sizeLimit = parseInt(document.getElementById("sizeLimitInput").value) - 1;
+		console.log("Bound: " + bound);
+		for(i = 0; i < bound; i++){
+			if(outputLanguage.length >= sizeLimit) break;
+			jLimit = outputLanguage.length;
+			for(j = 0; j < jLimit; j++){
+				if(outputLanguage.length >= sizeLimit) break;
+				for(k = 0; k < jLimit; k++){
+					if(outputLanguage.length >= sizeLimit) break;
+					outputLanguage.push(outputLanguage[j] + outputLanguage[k]);
+				}
+			}
+		}
+		outputLanguage.push("");
+		console.log(outputLanguage);
+		outputString = '[';
+		for(i=  0; i < outputLanguage.length - 1; i++) outputString += ('"' + outputLanguage[i] + '"' + ",");
+		outputString += '"' + outputLanguage[i] + '"';
+		outputString += ']';
+		document.getElementById("stringOutput").value = outputString;
+	}
+</script>
+</body>
+</html>
