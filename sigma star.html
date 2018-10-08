@@ -2,13 +2,13 @@
 <title>Sigma Star</title>
 <body>
 	<h2>Σ* Generator</h2>
-	Language Size Limit: <input id = "sizeLimitInput" value = "20"></input><br>
-	String Output:<br> <textarea id = "stringOutput" cols = 80 rows = 8></textarea><br>
+	Alphabet: <input id = "alphabetInput" value = "ab"></input> (no error checking, eccepts anything including duplicates)<br><br>
+	Language Size Limit: <input id = "sizeLimitInput" value = "20"></input><br><br>
+	String Output:<br> <textarea id = "stringOutput" cols = 82 rows = 8></textarea><br>
 	<button onclick = "generateString()"> Generate </button>
 <script>
-	tempLanguage = [];
 	function generateString(){
-		alphabet = ['a','b'];
+		alphabet = document.getElementById("alphabetInput").value.split("");
 		outputLanguage = [""];
 		var sizeLimit = parseInt(document.getElementById("sizeLimitInput").value);
 		nextStart = 0;
@@ -40,7 +40,14 @@
 				}
 			}
 		}
-		console.log(hasDups);
+		console.log("Language Contains Duplicates: " + hasDups);
+	}
+	
+	window.onkeyup = function(keyUp){
+		//alert(keyUp.keyCode);
+		if(keyUp.keyCode == 13){
+			generateString();
+		}
 	}
 </script>
 </body>
