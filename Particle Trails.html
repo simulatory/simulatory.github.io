@@ -7,11 +7,11 @@
 	</style>
 </head>
 <body>
+	Click to move particles. Press Spacebar to pause/resume. Press G to toggle gravity. Arrow keys to resize canvas.<br>
 	<canvas id="fieldCanvas" width="600" height="600" style="border:1px solid #a4a4a4; white-space:nowrap"></canvas>
 	
 	<script>
 		var fieldCanvas = document.getElementById("fieldCanvas");
-		var ctx = fieldCanvas.getContext("2d");
 		var ctx = fieldCanvas.getContext("2d");
 		var PI_CONST = 3.14159;
 		var dotDensity = 8;

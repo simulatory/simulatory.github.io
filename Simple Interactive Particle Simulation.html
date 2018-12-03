@@ -7,6 +7,7 @@
 	</style>
 </head>
 <body>
+	Click to move particles. Press Spacebar to pause/resume. Press G to toggle gravity. Arrow keys to resize canvas.<br>
 	<canvas id="fieldCanvas" width="600" height="600" style="border:1px solid #a4a4a4; white-space:nowrap"></canvas>
 	
 	<script>
@@ -93,7 +94,7 @@
 				forceDirection = origin.directionTo(pointPositions[i]);
 				forceDistance = origin.distTo(pointPositions[i]) / 60;
 				pointVelocities[i].moveBy(forceDirection.x / Math.pow(forceDistance, 2),
-				                                                    forceDirection.y / Math.pow(forceDistance, 2));
+				                                                   forceDirection.y / Math.pow(forceDistance, 2));
 			}
 			origin.plot("red", ctx);
 		}
