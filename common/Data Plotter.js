@@ -36,8 +36,8 @@ function DataPlot(fieldCanvas, graphName, seriesList, seriesNames, seriesColors,
 		minDataY -= getPrevMult(this.verticalGridDensity + 1, dataRangeY * 0.05);
 		dataRangeX = maxDataX - minDataX;
 		dataRangeY = maxDataY - minDataY;
-		console.log("MinX: " + minDataX + " MaxX: " + maxDataX + " Range: " + dataRangeX);
-		console.log("MinY: " + minDataY + " MaxY: " + maxDataY + " Range: " + dataRangeY);
+		//console.log("MinX: " + minDataX + " MaxX: " + maxDataX + " Range: " + dataRangeX);
+		//console.log("MinY: " + minDataY + " MaxY: " + maxDataY + " Range: " + dataRangeY);
 		this.ctx.font = "30px Arial";
 		this.ctx.textAlign = "left";
 		this.ctx.fillStyle = "#a4a4a4";
@@ -81,7 +81,7 @@ function DataPlot(fieldCanvas, graphName, seriesList, seriesNames, seriesColors,
 				this.ctx.closePath();
 			}
 			//drawing line
-			if(connectPoints){
+			if(this.connectPoints){
 				this.ctx.beginPath();
 				this.ctx.moveTo(ctxWidth * 0.15 + ctxWidth * 0.8 * ((seriesList[j][0] - minDataX)/ dataRangeX), ctxHeight * 0.8 - ctxHeight * 0.6 * ((seriesList[j][1]  - minDataY)/ dataRangeY));
 				for(i = 2; i < seriesList[j].length - 1; i+=2){
@@ -98,34 +98,9 @@ function DataPlot(fieldCanvas, graphName, seriesList, seriesNames, seriesColors,
 		seriesList.push(newSeries);
 		seriesColors.push(seriesColor);
 	}
-	
-	window.addEventListener("keydown", function(keyDown){
-		if(keyDown.keyCode == 37){
-			fieldCanvas.width -= 5;
-			this.update();
-		}
-		if(keyDown.keyCode == 38){
-			fieldCanvas.height += 5;
-			this.update();
-		}
-		if(keyDown.keyCode == 39){
-			fieldCanvas.width += 5;
-			this.update();
-		}
-		if(keyDown.keyCode == 40){
-			fieldCanvas.height -= 5;
-			this.update();
-		}
-	});
 }
 
 
-window.addEventListener("keydown", function(e) {
-	// space and arrow keys
-	if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
-		e.preventDefault();
-	}
-}, false);
 
 //generates random int between [min, max) inclusive/exclusive, respectively
 function randInt(min, max){
@@ -140,3 +115,7 @@ function getNextMult(factor, curr){
 function getPrevMult(factor, curr){
 	return Math.floor(curr / factor) * factor;
 }
+
+
+
+

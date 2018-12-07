@@ -7,28 +7,72 @@
 	</style>
 </head>
 <body>
-	Arrow keys to resize canvas.
+	<p style="width: 40%;">This is a demonstration of my data plotting library which uses an HTML canvas to draw a graph of multiple data series.
+	For demonstration purposes, this example simply tracks the X and Y coordinates of your cursor location over time to have something to display.</p>
+	Arrow keys to resize canvas. Spacebar to pause data collection. <button onclick= "toggleConnectPoints()"> Toggle Connecting Lines </button><br>
 	<canvas id="fieldCanvas" width="750" height="550" style="border:1px solid #a4a4a4; white-space:nowrap"></canvas>
 </body>
-<script type="text/javascript" src="Common/Data Plotter.js"></script>
+<script type="text/javascript" src="common/Data Plotter.js"></script>
 <script type="text/javascript">
+	collectData = true;
+	mouseLocationX = 0;
+	mouseLocationY = 0;
 	xCoords = [];
 	yCoords = [];
 	testSeriesList = [xCoords, yCoords];
 	seriesNames = ["X Coordinates", "Y Coordinates"];
 	seriesColors = ["red","blue"];
 
-	myDataPlot = new DataPlot(document.getElementById("fieldCanvas"), "Mouse Position (x,y) = (red,blue)", testSeriesList, seriesNames, seriesColors, "Height (cm)", "Time (ms)", true);
+	myDataPlot = new DataPlot(document.getElementById("fieldCanvas"), "Mouse Position (x = red, y = blue)", testSeriesList, seriesNames, seriesColors, "Height (cm)", "Time (ms)", true);
 	myDataPlot.update();
 	step = 0;
-	window.addEventListener("mousemove", recordMouseLocation, false);
-	function recordMouseLocation(mouseLoc){
-		xCoords.push(step);
-		xCoords.push(mouseLoc.pageX);
-		yCoords.push(step);
-		yCoords.push(mouseLoc.pageY);
-		step++;
+
+	function toggleConnectPoints(){
+		myDataPlot.connectPoints = !myDataPlot.connectPoints;
 		myDataPlot.update();
+	}
+	
+	window.addEventListener("keydown", function(e) {
+		// space and arrow keys
+		if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
+			e.preventDefault();
+		}
+		if(e.keyCode == 37){
+			fieldCanvas.width -= 5;
+			myDataPlot.update();
+		}
+		if(e.keyCode == 38){
+			fieldCanvas.height += 5;
+			myDataPlot.update();
+		}
+		if(e.keyCode == 39){
+			fieldCanvas.width += 5;
+			myDataPlot.update();
+		}
+		if(e.keyCode == 40){
+			fieldCanvas.height -= 5;
+			myDataPlot.update();
+		}
+	}, false);
+	window.addEventListener("keyup", function(e) {
+		//console.log(e.keyCode);
+		if(e.keyCode == 32) collectData = !collectData;
+	}, false);
+	window.setInterval(function (){
+		if(collectData){
+			xCoords.push(step);
+			xCoords.push(mouseLocationX); 
+			yCoords.push(step);
+			yCoords.push(mouseLocationY);
+			step++;
+			myDataPlot.update();
+		}
+	}, 100);
+
+	window.addEventListener("mousemove", updateMouseLocation, false);
+	function updateMouseLocation(mouseLoc){
+		mouseLocationX = mouseLoc.pageX;
+		mouseLocationY = mouseLoc.pageY;
 	}
 
 </script>
