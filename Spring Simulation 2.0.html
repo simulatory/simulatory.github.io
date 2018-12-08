@@ -90,13 +90,13 @@
 				ctx.lineTo(position.x + length * forward.x * 0.2 - forward.y * springRadius, position.y + length * forward.y * 0.2 - forward.x * springRadius);
 				ctx.moveTo(position.x + length * forward.x * 0.2 - forward.y * springRadius, position.y + length * forward.y * 0.2 - forward.x * springRadius);
 				for(i = 0; i < this.coilCount; i++){
-					console.log("drawing coil " + i + " of " + this.coilCount);
+					//console.log("drawing coil " + i + " of " + this.coilCount);
 					ctx.lineTo(position.x + length * forward.x * (0.2 + i * (0.6 / this.coilCount)) - forward.y * springRadius, position.y + length * forward.y * (0.2 + i * (0.6 / this.coilCount)) + forward.x * springRadius);
 					ctx.moveTo(position.x + length * forward.x * (0.2 + i * (0.6 / this.coilCount)) - forward.y * springRadius, position.y + length * forward.y * (0.2 + i * (0.6 / this.coilCount)) + forward.x * springRadius);
 					ctx.lineTo(position.x + length * forward.x * (0.2 + i * (0.6 / this.coilCount)) + forward.y * springRadius, position.y + length * forward.y * (0.2 + i * (0.6 / this.coilCount)) - forward.x * springRadius);
 					ctx.moveTo(position.x + length * forward.x * (0.2 + i * (0.6 / this.coilCount)) + forward.y * springRadius, position.y + length * forward.y * (0.2 + i * (0.6 / this.coilCount)) - forward.x * springRadius);
 				}
-				console.log("working");
+				//console.log("working");
 				ctx.lineTo(position.x + length * forward.x, position.y + length * forward.y);
 				ctx.stroke();
 				ctx.closePath();
