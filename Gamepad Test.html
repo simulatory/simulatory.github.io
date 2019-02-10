@@ -1,0 +1,235 @@
+<html>
+    <head>
+
+    </head>
+    <body>
+        <canvas style = "border: 1px solid black" id = worldCanvas width = 500 height = 500></canvas><br>
+        <span id = "debugOutput">Joysticks:</span>
+        <button onclick = "worldCanvas.requestFullscreen()">Fullscreen</button>
+        <!--<img src = "images/2_KNIGHT/_ATTACK/_ATTACK_001.png" id = "myIMG">-->
+        <script>
+            worldCanvas = document.getElementById("worldCanvas");
+            worldCanvas.width = 1360;
+            worldCanvas.height = 768;
+            ctx = worldCanvas.getContext("2d");
+            debugOutput = document.getElementById("debugOutput");
+            playerGamepad = undefined;
+            window.setInterval(gamepadInput, 50);
+            window.setInterval(drawBackground, 50);
+            window.setInterval(animateCharacter, 90);
+
+            characterScaleFactor = 0.1;
+            animStep = 0;
+            knightID = 2;
+            knightsRun = [];
+            animLock = 0;
+            loadImages();
+            function animateCharacter(){
+                debugOutput.innerHTML = "Player Position: (" + playerPosX + ", " + playerPosY + ")";
+                if(animLock > 0) animLock--;
+                animStep = (animStep + 1) % 7;
+            }
+            function drawCharacter(){
+                currFrame = characterState[7 * knightID + animStep];
+                ctx.beginPath();
+                //if(facingLeft) ctx.scale(-1,1);
+                //ctx.drawImage(currFrame, 300, 100, currFrame.width * characterScaleFactor, currFrame.height * characterScaleFactor);
+                ctx.scale(1,1);
+                ctx.closePath();
+                ctx.drawImage(currFrame, (worldCanvas.width - currFrame.width * characterScaleFactor) / 2, worldCanvas.height - playerPosY - currFrame.height * characterScaleFactor, -currFrame.width * characterScaleFactor, currFrame.height * characterScaleFactor);
+//                                                                                        factored out division by 2
+            }
+
+            characterState = knightsIdle;
+            function setCharacterState(newState, newLock){
+                if(animLock == 0){
+                    characterState = newState;
+                    if(newLock > 0) animStep = 0;
+                    animLock = newLock;
+                }
+            }
+
+            offset = 0;
+            cloudOffset = 0;
+            backgroundIMG = new Image();
+            groundTile = new Image();
+            groundTile.src = "images/backgrounds/game_background_1/layers/icey_ground.png";
+            backgroundIMG.src = "images/backgrounds/game_background_1/game_background_1.png";
+            backgroundScale = (worldCanvas.height / 1080);
+            backgroundScrollSpeed = 0.01;
+            function drawBackground(){
+                ctx.clearRect(0,0,worldCanvas.width,worldCanvas.height);
+                for(i = 0; i < backgroundImages.length; i++){
+                    if(i == 1 || i == 2 || i == 4 || i == 6) offset = cloudOffset * i;
+                    else offset = 0;
+                    backgroundIMG = backgroundImages[i];
+                    ctx.drawImage(backgroundIMG, (offset - playerPosX * i * backgroundScrollSpeed) % (backgroundIMG.width * backgroundScale), 0, backgroundIMG.width * backgroundScale, backgroundIMG.height * backgroundScale);
+                    if(playerPosX > 0) ctx.drawImage(backgroundIMG, (offset - playerPosX * i * backgroundScrollSpeed) % (backgroundIMG.width * backgroundScale) + backgroundIMG.width * backgroundScale, 0, backgroundIMG.width * backgroundScale, backgroundIMG.height * backgroundScale);
+                    else               ctx.drawImage(backgroundIMG, (offset - playerPosX * i * backgroundScrollSpeed) % (backgroundIMG.width * backgroundScale) - backgroundIMG.width * backgroundScale, 0, backgroundIMG.width * backgroundScale, backgroundIMG.height * backgroundScale);
+                }
+                cloudOffset = (cloudOffset + 0.1) % worldCanvas.width;
+                drawCharacter();
+                ctx.drawImage(groundTile, - playerPosX % (backgroundIMG.width * backgroundScale), 9, backgroundIMG.width * backgroundScale, backgroundIMG.height * backgroundScale);
+                if(playerPosX > 0) ctx.drawImage(groundTile, - playerPosX % (backgroundIMG.width * backgroundScale) + backgroundIMG.width * backgroundScale, 9, backgroundIMG.width * backgroundScale, backgroundIMG.height * backgroundScale);
+                else               ctx.drawImage(groundTile, - playerPosX % (backgroundIMG.width * backgroundScale) - backgroundIMG.width * backgroundScale, 9, backgroundIMG.width * backgroundScale, backgroundIMG.height * backgroundScale);
+            }
+            playerPosX = 0;
+            playerPosY = 0;
+            prevInputTime = 0;
+            playerRunning = false;
+            facingLeft = false;
+            function gamepadInput(){
+                if(playerGamepad == undefined){ //no gamepad connected, using keyboard input
+                    console.log("Getting keyboard input.");
+                    if(keyStates[65]){ // left
+                        facingLeft= true;
+                        console.log("moving horizontally 5");
+                        if (playerRunning){
+                            setCharacterState(knightsRun, 0);
+                            playerPosX += playerGamepad.axes[0] * 20;
+                        } else {
+                            setCharacterState(knightsWalk, 0);
+                            playerPosX += playerGamepad.axes[0] * 5;
+                        }
+                    } else 
+                    if(keyStates[68]){ // right
+                        facingLeft = false;
+                        console.log("moving horizontally " + playerGamepad.axes[0] + " * 5");
+                        if (playerRunning){
+                            setCharacterState(knightsRun, 0);
+                            playerPosX += playerGamepad.axes[0] * 20;
+                        } else {
+                            setCharacterState(knightsWalk, 0);
+                            playerPosX += playerGamepad.axes[0] * 5;
+                        }
+                    } else{
+                        setCharacterState(knightsIdle, 0);
+                    }
+                    if(keyStates[81]) setCharacterState(knightsAttack, 6);
+                    else if(playerGamepad.buttons[0].value) setCharacterState(knightsJump, 6);
+                } else {
+                    navigator.getGamepads();
+                    if(playerGamepad.timestamp < prevInputTime + 0.05) return;
+                    prevInputTime = playerGamepad.timestamp;
+                    //console.log("reading gamepad input");
+                    for(i = 0; i < playerGamepad.buttons.length; i++){
+                        if(playerGamepad.buttons[i].value) console.log("Button " + i + " = " + playerGamepad.buttons[i].value);
+                    }
+                    //horizontal movement
+                    if(playerGamepad.axes[0] < -0.15){ // left
+                        facingLeft= true;
+                        console.log("moving horizontally " + playerGamepad.axes[0] + " * 5");
+                        if (playerRunning){
+                            setCharacterState(knightsRun, 0);
+                            playerPosX += playerGamepad.axes[0] * 20;
+                        } else {
+                            setCharacterState(knightsWalk, 0);
+                            playerPosX += playerGamepad.axes[0] * 5;
+                        }
+                    } else 
+                    if(playerGamepad.axes[0] > 0.15){ // right
+                        facingLeft = false;
+                        console.log("moving horizontally " + playerGamepad.axes[0] + " * 5");
+                        if (playerRunning){
+                            setCharacterState(knightsRun, 0);
+                            playerPosX += playerGamepad.axes[0] * 20;
+                        } else {
+                            setCharacterState(knightsWalk, 0);
+                            playerPosX += playerGamepad.axes[0] * 5;
+                        }
+                    } else{
+                        playerRunning = false;
+                        setCharacterState(knightsIdle, 0);
+                    }
+                    if(playerGamepad.buttons[2].value) setCharacterState(knightsAttack, 6);
+                    else if(playerGamepad.buttons[10].value) playerRunning = true;
+                    else if(playerGamepad.buttons[0].value) setCharacterState(knightsJump, 6);
+                    //vertical movement
+                    //if(playerGamepad.axes[1] < -0.08 || playerGamepad.axes[1] > 0.08) playerPosY += playerGamepad.axes[1] * 5;
+                    //joystickOutput.innerHTML = "(" + playerGamepad.axes[0] + ", " + playerGamepad.axes[1] + ") (" + playerGamepad.axes[2] + ", " + playerGamepad.axes[3] + ")";
+                }
+            }
+
+            var keyStates = [];
+            for(i = 0; i < 100; i++) keyStates.push(false);
+            //worldCanvas.addEventListener("mouseup", worldCanvas.requestFullscreen);
+            window.addEventListener("keydown", kdHandler, false);
+            window.addEventListener("gamepadconnected", gpcHandler, false);
+            window.addEventListener("gamepaddisconnected", gpdcHandler, false);
+            function kdHandler(event){
+                console.log(event.keyCode);
+                keyStates[event.keyCode] = true;
+            }
+            function kuHandler(event){
+                console.log(event.keyCode);
+                keyStates[event.keyCode] = false;
+            }
+            function gpcHandler(event){
+                console.log(event);
+                playerGamepad = event.gamepad;
+            }
+            function gpdcHandler(event){
+                console.log("Gamepad Disconnected!");
+                console.log(event);
+            }
+            
+
+
+
+
+            // -------------------------------------- Image Loading ------------------------------------------
+            function loadImages(){
+                for(j = 0; j < 3; j++){
+                    for(i = 0; i < 7; i++){
+                        knightsRun.push(new Image());
+                        knightsRun[i + 7*j].src = "images/" + j + "_KNIGHT/_RUN/_RUN_00" + i + ".png";
+                    }
+                }
+                knightsWalk = [];
+                for(j = 0; j < 3; j++){
+                    for(i = 0; i < 7; i++){
+                        knightsWalk.push(new Image());
+                        knightsWalk[i + 7*j].src = "images/" + j + "_KNIGHT/_WALK/_WALK_00" + i + ".png";
+                    }
+                }
+                knightsIdle = [];
+                for(j = 0; j < 3; j++){
+                    for(i = 0; i < 7; i++){
+                        knightsIdle.push(new Image());
+                        knightsIdle[i + 7*j].src = "images/" + j + "_KNIGHT/_IDLE/_IDLE_00" + i + ".png";
+                    }
+                }
+                knightsDie = [];
+                for(j = 0; j < 3; j++){
+                    for(i = 0; i < 7; i++){
+                        knightsDie.push(new Image());
+                        knightsDie[i + 7*j].src = "images/" + j + "_KNIGHT/_DIE/_DIE_00" + i + ".png";
+                    }
+                }
+                knightsJump = [];
+                for(j = 0; j < 3; j++){
+                    for(i = 0; i < 7; i++){
+                        knightsJump.push(new Image());
+                        knightsJump[i + 7*j].src = "images/" + j + "_KNIGHT/_JUMP/_JUMP_00" + i + ".png";
+                    }
+                }
+                knightsAttack = [];
+                for(j = 0; j < 3; j++){
+                    for(i = 0; i < 7; i++){
+                        knightsAttack.push(new Image());
+                        knightsAttack[i + 7*j].src = "images/" + j + "_KNIGHT/_ATTACK/_ATTACK_00" + i + ".png";
+                    }
+                }
+                backgroundImages = [];
+                for(i = 0; i < 7; i++) backgroundImages.push(new Image());
+                backgroundImages[0].src = "images/backgrounds/game_background_1/layers/sky.png"
+                backgroundImages[1].src = "images/backgrounds/game_background_1/layers/clouds_1.png"
+                backgroundImages[2].src = "images/backgrounds/game_background_1/layers/clouds_2.png"
+                backgroundImages[3].src = "images/backgrounds/game_background_1/layers/rocks_1.png"
+                backgroundImages[4].src = "images/backgrounds/game_background_1/layers/clouds_3.png"
+                backgroundImages[5].src = "images/backgrounds/game_background_1/layers/rocks_2.png"
+                backgroundImages[6].src = "images/backgrounds/game_background_1/layers/clouds_4.png"
+            }
+        </script>
+    </body>
+</html>
