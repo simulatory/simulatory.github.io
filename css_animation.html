@@ -1,0 +1,109 @@
+<style>
+
+    .bubble {
+        width: 10px;
+        height: 10px;
+        background: rgb(218, 233, 245);
+        border-radius: 20px;
+        border: 2px solid rgb(113, 208, 231);
+        padding: 1vh;
+        margin-left: 2vw;
+        margin-right: 2vw;
+        animation: bubbleExpand 9s linear infinite;
+        animation-delay: inherit;
+        animation-duration: inherit;
+        animation-fill-mode: backwards;
+        transition: background-color 0.4s ease;
+    
+    }
+    .bottle-body:hover .bubble {
+        background: rgb(206, 157, 168);
+    }
+    .bubble-cont0 {
+
+        animation: bubbleVert ease-in 9s infinite;
+        animation-delay: 0s;
+    
+    }
+    .bubble-cont1 {
+
+        /*animation: bubbleHoriz 2s infinite;*/
+        animation-delay: 0s;
+        position: absolute;
+    
+    }
+    .bottle-body {
+        background: rgb(182, 212, 233);
+        width: 250px;
+        height: 85%;
+        border-radius: 50px 50px 15px 15px;
+        transition: background-color 0.4s ease;
+    }
+    .bottle-body:hover {
+        background: rgb(179, 79, 101);
+        width: 250px;
+        height: 85%;
+        border-radius: 50px 50px 15px 15px;
+    }
+    .bottle-cap {
+        display: inline-block;
+        background: rgb(182, 212, 233);
+        width: 120px;
+        height: 60px;
+        border-radius: 40px 40px 15px 15px;
+    }
+    @keyframes bubbleVert {
+        from {
+            transform: translate(0,80vh);
+        }
+        to {
+            transform: translate(0,5vh);
+        }
+    }
+    @keyframes bubbleExpand {
+        from {
+            transform: scale(0.05,0.05);
+        }
+        to {
+            transform: scale(0.8,0.8);
+        }
+    }
+</style>
+<div style = "text-align:center; width: 250px">
+    <div class = "bottle-cap"></div>
+    <div class = "bottle-body">
+        <table id = "bubbleContainerTable">
+            <tr>
+                <td>
+                    <div class = "bubble-cont1 random-anim-delay">
+                    <div class = "bubble-cont0 random-anim-delay">
+                    <div class = "bubble"></div>
+                    </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<script>
+
+    // populate table with lots of bubbles:
+    bubbleContainerTR = document.getElementById("bubbleContainerTable").rows[0];
+    cellText = bubbleContainerTR.cells[0].innerHTML;
+    for(i = 0; i < 50; i++){
+        currCell = bubbleContainerTR.insertCell();
+        currCell.innerHTML = cellText;
+    }
+
+    // fill those bubbles with random animation timing attributes for variation:
+    function randomizeAnim(className){
+        for(currElem of document.getElementsByClassName(className)){
+            currElem.style.animationDelay = Math.random() * 10 + "s";
+            currElem.style.animationDuration = (8 + Math.random() * 3) + "s";
+        }
+    }
+
+    randomizeAnim("random-anim-delay");
+</script>
+
