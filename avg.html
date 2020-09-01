@@ -1,0 +1,55 @@
+<head>
+    <style>
+        .horizontal-container > * { /* anything one level within the hor-con class */
+            display: inline-block;
+        }
+        /** {
+            border:1px solid black;
+        }*/
+        input {
+            outline:1px solid black;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="horizontal-container">
+        <table id = "inputsTable">
+            <tbody>
+                <tr><td><input type = 'number' class = 'inputs' oninput = 'inputsUpdatedListener()'></td></tr>
+                <tr><td><input type = 'number' class = 'inputs' oninput = 'inputsUpdatedListener()'></td></tr>
+                <tr><td><input type = 'number' class = 'inputs' oninput = 'inputsUpdatedListener()'></td></tr>
+                <tr><td><input type = 'number' class = 'inputs' oninput = 'inputsUpdatedListener()'></td></tr>
+                <tr><td><input type = 'number' class = 'inputs' oninput = 'inputsUpdatedListener()'></td></tr>
+            </tbody>
+        </table>
+        <div>
+            <button onclick = "addInputField()"> + </button><br>
+        </div>
+    </div>
+    Average: <span id = "averageOutputField"></span>
+</body>
+<script>
+    document.body.style.zoom="100%";
+    for (elem of document.getElementsByClassName("inputs")) elem.addEventListener("input", inputsUpdatedListener);
+
+    function inputsUpdatedListener(){
+        console.log("input");
+        sum = 0;
+        valCount = 0;
+        for (elem of document.getElementsByClassName("inputs")){
+            val = parseFloat(elem.value);
+            if(!isNaN(val)){
+                sum += val;
+                valCount++;
+            }
+        }
+        document.getElementById("averageOutputField").innerHTML = sum/valCount;
+    }
+
+    function addInputField(){
+        console.log("Adding new field.");
+        newRow = document.getElementById("inputsTable").insertRow();
+        newRow.innerHTML = "<td><input type = 'number' class = 'inputs' oninput = 'inputsUpdatedListener()'></td>";
+    }
+</script>
