@@ -24,7 +24,8 @@
             </tbody>
         </table>
         <div>
-            <button onclick = "addInputField()"> + </button><br>
+            <button onclick = "addInputField()"> + </button><br><br>
+            <button onclick = "clearFields()"> C </button><br>
         </div>
     </div>
     Average: <span id = "averageOutputField"></span>
@@ -45,6 +46,10 @@
             }
         }
         document.getElementById("averageOutputField").innerHTML = sum/valCount;
+    }
+
+    function clearFields(){
+        for(elem of document.getElementsByClassName("inputs")) elem.value = "";
     }
 
     function addInputField(){
