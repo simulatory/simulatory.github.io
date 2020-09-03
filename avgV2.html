@@ -1,0 +1,67 @@
+<head>
+    <style>
+        .horizontal-container > * { /* anything one level within the hor-con class */
+            display: inline-block;
+        }
+        /** {
+            border:1px solid black;
+        }*/
+        input {
+            outline:1px solid black;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="horizontal-container">
+        <table id = "inputsTable">
+            <tbody>
+                <tr><td><input type = 'number' class = 'inputs' id = "numInput0" oninput = 'inputsUpdatedListener(0)'></td></tr>
+                <tr><td><input type = 'number' class = 'inputs' id = "numInput1" oninput = 'inputsUpdatedListener(1)'></td></tr>
+                <tr><td><input type = 'number' class = 'inputs' id = "numInput2" oninput = 'inputsUpdatedListener(2)'></td></tr>
+                <tr><td><input type = 'number' class = 'inputs' id = "numInput3" oninput = 'inputsUpdatedListener(3)'></td></tr>
+                <tr><td><input type = 'number' class = 'inputs' id = "numInput4" oninput = 'inputsUpdatedListener(4)'></td></tr>
+            </tbody>
+        </table>
+        <div>
+            <button onclick = "addInputField()"> + </button><br><br>
+            <button onclick = "clearFields()"> C </button><br>
+        </div>
+    </div>
+    Average: <span id = "averageOutputField"></span>
+</body>
+<script>
+    numInputFields = 5;
+    document.body.style.zoom="100%";
+    // old method for adding input listener
+    //for (elem of document.getElementsByClassName("inputs")) elem.addEventListener("input", inputsUpdatedListener);
+
+    function inputsUpdatedListener(i){
+        console.log("input");
+        console.log("i: " + i);
+        sum = 0;
+        valCount = 0;
+        inputsArray = document.getElementsByClassName("inputs");
+        for (elem of inputsArray){
+            val = parseFloat(elem.value);
+            if(!isNaN(val)){
+                sum += val;
+                valCount++;
+            }
+        }
+        document.getElementById("averageOutputField").innerHTML = sum/valCount;
+
+        if(inputsArray[i].value.length >= 4 && i<numInputFields-1) inputsArray[i+1].focus();
+    }
+
+    function clearFields(){
+        for(elem of document.getElementsByClassName("inputs")) elem.value = "";
+    }
+
+    function addInputField(){
+        console.log("Adding new field.");
+        newRow = document.getElementById("inputsTable").insertRow();
+        newRow.innerHTML = "<td><input type = 'number' class = 'inputs' id = 'numInput" + numInputFields + "' oninput = 'inputsUpdatedListener(" + numInputFields + ")'></td>";
+        numInputFields++;
+    }
+</script>
