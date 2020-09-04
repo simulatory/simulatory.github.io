@@ -55,7 +55,9 @@
     }
 
     function clearFields(){
-        for(elem of document.getElementsByClassName("inputs")) elem.value = "";
+        inputsArray = document.getElementsByClassName("inputs");
+        for(elem of inputsArray) elem.value = "";
+        inputsArray[0].focus();
     }
 
     function addInputField(){
